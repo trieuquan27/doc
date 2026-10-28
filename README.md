@@ -1,4 +1,4 @@
-# trieuquan.github.io
+# claude-artifacts
 
 Danh mục các artifact trên tài khoản Claude, deploy bằng GitHub Actions lên GitHub Pages.
 
