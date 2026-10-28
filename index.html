@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Trieu's Artifacts</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+<style>
+  :root {
+    --bg: #f7f6f3; --surface: #ffffff; --text: #1f1e1c; --muted: #6b6862;
+    --border: #e4e1da; --accent: #c4623a; --accent-soft: #f6e6dd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1918; --surface: #242321; --text: #ecebe7; --muted: #9c988f;
+      --border: #36342f; --accent: #e08a62; --accent-soft: #3a2a22;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 40px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+  input[type=search] {
+    flex: 1 1 260px; padding: 10px 14px; font: inherit; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  }
+  input[type=search]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .chip {
+    padding: 8px 14px; font: inherit; font-size: 13px; cursor: pointer; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+  }
+  .chip[aria-pressed=true] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 32px 0 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+  a.card {
+    display: block; padding: 14px 16px; text-decoration: none; color: inherit;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    transition: border-color .15s, transform .15s;
+  }
+  a.card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .card .t { font-weight: 600; }
+  .card .d { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .empty { color: var(--muted); padding: 24px 0; }
+  footer { color: var(--muted); font-size: 13px; margin-top: 48px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Trieu's Artifacts</h1>
+  <p class="sub">Danh mục artifact trên Claude. Nội dung nằm trên claude.ai, chỉ mở được khi đã được share.</p>
+  <div class="controls">
+    <input type="search" id="q" placeholder="Tìm theo tên…" autocomplete="off">
+    <div id="chips" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+  </div>
+  <div id="list"></div>
+  <footer id="count"></footer>
+</div>
+<script>
+  const ORDER = ["GCI Business", "GCI Reward", "FastboyPay", "Quy trình & team", "Học tập & khác"];
+  let items = [], active = "Tất cả";
+  const $ = id => document.getElementById(id);
+  const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/gi, "d").toLowerCase();
+
+  function render() {
+    const q = norm($("q").value.trim());
+    const shown = items.filter(a => (active === "Tất cả" || a.group === active) && norm(a.title).includes(q));
+    const groups = [...new Set([...ORDER, ...shown.map(a => a.group)])];
+    $("list").innerHTML = groups.map(g => {
+      const rows = shown.filter(a => a.group === g).sort((a, b) => b.updated.localeCompare(a.updated));
+      if (!rows.length) return "";
+      return `<h2>${esc(g)} · ${rows.length}</h2><div class="grid">` + rows.map(a =>
+        `<a class="card" href="${esc(a.url)}" target="_blank" rel="noopener">
+           <div class="t">${esc(a.title)}</div><div class="d">Cập nhật ${a.updated}</div></a>`).join("") + "</div>";
+    }).join("") || `<p class="empty">Không tìm thấy artifact nào.</p>`;
+    $("count").textContent = `${shown.length} / ${items.length} artifact`;
+  }
+
+  function renderChips() {
+    const groups = ["Tất cả", ...new Set([...ORDER.filter(g => items.some(a => a.group === g)), ...items.map(a => a.group)])];
+    $("chips").innerHTML = groups.map(g => `<button class="chip" aria-pressed="${g === active}">${esc(g)}</button>`).join("");
+    $("chips").querySelectorAll(".chip").forEach((b, i) => b.onclick = () => { active = groups[i]; renderChips(); render(); });
+  }
+
+  fetch("artifacts.json").then(r => r.json()).then(data => { items = data; renderChips(); render(); });
+  $("q").addEventListener("input", render);
+</script>
+</body>
+</html>
