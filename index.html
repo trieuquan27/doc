@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Trieu's Artifacts</title>
+<title>Trieu's Docs</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
 <style>
   :root {
@@ -22,21 +22,31 @@
     margin: 0; background: var(--bg); color: var(--text);
     font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
-  .wrap { max-width: 960px; margin: 0 auto; padding: 40px 16px 64px; }
-  h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
-  .sub { color: var(--muted); margin: 0 0 24px; }
-  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+  .top { display: flex; align-items: center; gap: 16px; padding: 14px 0 10px; flex-wrap: wrap; }
+  .brand { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin-right: auto; }
   input[type=search] {
-    flex: 1 1 260px; padding: 10px 14px; font: inherit; color: var(--text);
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    flex: 0 1 280px; min-width: 0; padding: 8px 12px; font: inherit; font-size: 14px; color: var(--text);
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
   }
   input[type=search]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-  .chip {
-    padding: 8px 14px; font: inherit; font-size: 13px; cursor: pointer; color: var(--text);
-    background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+  nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin-bottom: -1px; }
+  nav::-webkit-scrollbar { display: none; }
+  nav a {
+    flex: none; padding: 10px 14px; text-decoration: none; color: var(--muted); font-size: 14px; font-weight: 500;
+    border-bottom: 2px solid transparent; white-space: nowrap;
   }
-  .chip[aria-pressed=true] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
-  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 32px 0 10px; }
+  nav a:hover { color: var(--text); }
+  nav a[aria-current=page] { color: var(--accent); border-bottom-color: var(--accent); }
+  nav .n { font-size: 12px; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--bg); }
+  nav a[aria-current=page] .n { background: var(--accent-soft); }
+
+  main { padding: 28px 0 64px; }
+  .project-head h1 { font-size: 26px; margin: 0; letter-spacing: -0.01em; }
+  .project-head p { color: var(--muted); margin: 4px 0 20px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 28px 0 10px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
   a.card {
     display: block; padding: 14px 16px; text-decoration: none; color: inherit;
@@ -47,49 +57,73 @@
   .card .t { font-weight: 600; }
   .card .d { color: var(--muted); font-size: 13px; margin-top: 4px; }
   .empty { color: var(--muted); padding: 24px 0; }
-  footer { color: var(--muted); font-size: 13px; margin-top: 48px; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Trieu's Artifacts</h1>
-  <p class="sub">Danh mục artifact trên Claude. Nội dung nằm trên claude.ai, chỉ mở được khi đã được share.</p>
-  <div class="controls">
-    <input type="search" id="q" placeholder="Tìm theo tên…" autocomplete="off">
-    <div id="chips" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+<header>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">📚 Trieu's Docs</div>
+      <input type="search" id="q" placeholder="Tìm theo tên…" autocomplete="off">
+    </div>
+    <nav id="tabs"></nav>
   </div>
+</header>
+<main class="wrap">
+  <div class="project-head"><h1 id="ptitle"></h1><p id="pdesc"></p></div>
   <div id="list"></div>
-  <footer id="count"></footer>
-</div>
+</main>
 <script>
-  const ORDER = ["GCI Business", "GCI Reward", "FastboyPay", "Quy trình & team", "Học tập & khác"];
-  let items = [], active = "Tất cả";
+  const ALL = "Tất cả";
+  const PROJECTS = {
+    "GCI Business": "App quản lý cho chủ salon: Business App, Owner App, thanh toán, báo cáo.",
+    "GCI Reward": "App cho khách hàng: tìm salon, đặt lịch, tích điểm và đổi thưởng.",
+    "FastboyPay": "Cổng thanh toán và các prototype checkout.",
+    "Quy trình & team": "Quy trình làm việc, QC và KPI của team.",
+    "Học tập & khác": "Tài liệu học tập và công cụ cá nhân."
+  };
+  let items = [];
   const $ = id => document.getElementById(id);
   const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/gi, "d").toLowerCase();
+  const slug = s => norm(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const projects = () => [...new Set([...Object.keys(PROJECTS).filter(p => items.some(a => a.group === p)), ...items.map(a => a.group)])];
+  const current = () => projects().find(p => slug(p) === location.hash.slice(1)) || ALL;
+
+  const cards = rows => `<div class="grid">` + rows.map(a =>
+    `<a class="card" href="${esc(a.url)}" target="_blank" rel="noopener">
+       <div class="t">${esc(a.title)}</div><div class="d">Cập nhật ${a.updated}</div></a>`).join("") + "</div>";
 
   function render() {
-    const q = norm($("q").value.trim());
-    const shown = items.filter(a => (active === "Tất cả" || a.group === active) && norm(a.title).includes(q));
-    const groups = [...new Set([...ORDER, ...shown.map(a => a.group)])];
-    $("list").innerHTML = groups.map(g => {
-      const rows = shown.filter(a => a.group === g).sort((a, b) => b.updated.localeCompare(a.updated));
-      if (!rows.length) return "";
-      return `<h2>${esc(g)} · ${rows.length}</h2><div class="grid">` + rows.map(a =>
-        `<a class="card" href="${esc(a.url)}" target="_blank" rel="noopener">
-           <div class="t">${esc(a.title)}</div><div class="d">Cập nhật ${a.updated}</div></a>`).join("") + "</div>";
-    }).join("") || `<p class="empty">Không tìm thấy artifact nào.</p>`;
-    $("count").textContent = `${shown.length} / ${items.length} artifact`;
+    const tab = current(), q = norm($("q").value.trim());
+    const match = a => norm(a.title).includes(q);
+    const byDate = (a, b) => b.updated.localeCompare(a.updated);
+
+    $("tabs").innerHTML = [ALL, ...projects()].map(p => {
+      const n = p === ALL ? items.length : items.filter(a => a.group === p).length;
+      return `<a href="#${p === ALL ? "" : slug(p)}" ${p === tab ? 'aria-current="page"' : ""}>${esc(p)}<span class="n">${n}</span></a>`;
+    }).join("");
+
+    $("ptitle").textContent = tab === ALL ? "Tất cả dự án" : tab;
+    $("pdesc").textContent = tab === ALL ? "Danh mục artifact trên Claude. Nội dung nằm trên claude.ai, chỉ mở được khi đã được share." : (PROJECTS[tab] || "");
+
+    let html;
+    if (tab === ALL) {
+      html = projects().map(p => {
+        const rows = items.filter(a => a.group === p && match(a)).sort(byDate);
+        return rows.length ? `<h2>${esc(p)} · ${rows.length}</h2>` + cards(rows) : "";
+      }).join("");
+    } else {
+      const rows = items.filter(a => a.group === tab && match(a)).sort(byDate);
+      html = rows.length ? cards(rows) : "";
+    }
+    $("list").innerHTML = html || `<p class="empty">Không tìm thấy artifact nào.</p>`;
+    document.title = (tab === ALL ? "" : tab + " · ") + "Trieu's Docs";
   }
 
-  function renderChips() {
-    const groups = ["Tất cả", ...new Set([...ORDER.filter(g => items.some(a => a.group === g)), ...items.map(a => a.group)])];
-    $("chips").innerHTML = groups.map(g => `<button class="chip" aria-pressed="${g === active}">${esc(g)}</button>`).join("");
-    $("chips").querySelectorAll(".chip").forEach((b, i) => b.onclick = () => { active = groups[i]; renderChips(); render(); });
-  }
-
-  fetch("artifacts.json").then(r => r.json()).then(data => { items = data; renderChips(); render(); });
+  fetch("artifacts.json").then(r => r.json()).then(data => { items = data; render(); });
   $("q").addEventListener("input", render);
+  addEventListener("hashchange", () => { render(); scrollTo(0, 0); });
 </script>
 </body>
 </html>
