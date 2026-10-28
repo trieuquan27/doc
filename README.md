@@ -1,4 +1,4 @@
-# claude-artifacts
+# doc
 
 Danh mục các artifact trên tài khoản Claude, deploy bằng GitHub Actions lên GitHub Pages.
 
