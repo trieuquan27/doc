@@ -6,82 +6,148 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Trieu's Docs</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f7f6f3; --surface: #ffffff; --text: #1f1e1c; --muted: #6b6862;
-    --border: #e4e1da; --accent: #c4623a; --accent-soft: #f6e6dd;
+    --bg: #07070d; --text: #f3f2fa; --muted: #9a98b3;
+    --glass: rgba(255,255,255,.05); --glass-hi: rgba(255,255,255,.09); --line: rgba(255,255,255,.10);
+    --blob1: #7c3aed; --blob2: #ec4899; --blob3: #06b6d4;
+    --grad: linear-gradient(120deg, #a78bfa, #f472b6 45%, #22d3ee);
+    --shadow: 0 10px 40px -12px rgba(124,58,237,.45);
   }
-  @media (prefers-color-scheme: dark) {
+  @media (prefers-color-scheme: light) {
     :root {
-      --bg: #1a1918; --surface: #242321; --text: #ecebe7; --muted: #9c988f;
-      --border: #36342f; --accent: #e08a62; --accent-soft: #3a2a22;
+      --bg: #f6f4ff; --text: #1a1830; --muted: #625f80;
+      --glass: rgba(255,255,255,.55); --glass-hi: rgba(255,255,255,.85); --line: rgba(80,60,160,.12);
+      --blob1: #c4b5fd; --blob2: #fbcfe8; --blob3: #a5f3fc;
+      --grad: linear-gradient(120deg, #7c3aed, #db2777 45%, #0891b2);
+      --shadow: 0 10px 40px -14px rgba(124,58,237,.35);
     }
   }
   * { box-sizing: border-box; }
+  html { background: var(--bg); }
   body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0; min-height: 100vh; color: var(--text);
+    font: 15px/1.55 "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    overflow-x: hidden;
   }
-  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+  /* aurora background */
+  .aurora { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+  .aurora span { position: absolute; width: 55vmax; height: 55vmax; border-radius: 50%; filter: blur(90px); opacity: .45; animation: drift 24s ease-in-out infinite alternate; }
+  .aurora span:nth-child(1) { background: var(--blob1); top: -20vmax; left: -15vmax; }
+  .aurora span:nth-child(2) { background: var(--blob2); top: 10vmax; right: -20vmax; animation-delay: -8s; }
+  .aurora span:nth-child(3) { background: var(--blob3); bottom: -25vmax; left: 20vmax; animation-delay: -16s; opacity: .3; }
+  .aurora::after {
+    content: ""; position: absolute; inset: 0;
+    background-image: radial-gradient(var(--line) 1px, transparent 1px); background-size: 28px 28px;
+    mask-image: linear-gradient(to bottom, #000 0%, transparent 70%);
+  }
+  @keyframes drift { to { transform: translate(6vmax, 4vmax) scale(1.12); } }
+  @media (prefers-reduced-motion: reduce) { .aurora span { animation: none; } }
 
-  header { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
-  .top { display: flex; align-items: center; gap: 16px; padding: 14px 0 10px; flex-wrap: wrap; }
-  .brand { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin-right: auto; }
-  input[type=search] {
-    flex: 0 1 280px; min-width: 0; padding: 8px 12px; font: inherit; font-size: 14px; color: var(--text);
-    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 55%, transparent);
+    backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border-bottom: 1px solid var(--line);
   }
-  input[type=search]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-  nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin-bottom: -1px; }
+  .top { display: flex; align-items: center; gap: 16px; padding: 16px 0 12px; flex-wrap: wrap; }
+  .brand { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin-right: auto; display: flex; align-items: center; gap: 10px; }
+  .brand .logo {
+    width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 18px;
+    background: var(--grad); box-shadow: var(--shadow);
+  }
+  .brand .name { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .search { position: relative; flex: 0 1 300px; min-width: 0; }
+  .search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+  input[type=search] {
+    width: 100%; padding: 10px 14px 10px 36px; font: inherit; font-size: 14px; color: var(--text);
+    background: var(--glass); border: 1px solid var(--line); border-radius: 999px;
+  }
+  input[type=search]::placeholder { color: var(--muted); }
+  input[type=search]:focus { outline: none; border-color: #a78bfa; box-shadow: 0 0 0 4px rgba(167,139,250,.2); }
+
+  nav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 14px; }
   nav::-webkit-scrollbar { display: none; }
   nav a {
-    flex: none; padding: 10px 14px; text-decoration: none; color: var(--muted); font-size: 14px; font-weight: 500;
-    border-bottom: 2px solid transparent; white-space: nowrap;
+    flex: none; padding: 8px 14px; text-decoration: none; color: var(--muted); font-size: 14px; font-weight: 500;
+    border-radius: 999px; border: 1px solid transparent; white-space: nowrap; transition: all .2s;
   }
-  nav a:hover { color: var(--text); }
-  nav a[aria-current=page] { color: var(--accent); border-bottom-color: var(--accent); }
-  nav .n { font-size: 12px; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--bg); }
-  nav a[aria-current=page] .n { background: var(--accent-soft); }
+  nav a:hover { color: var(--text); background: var(--glass); }
+  nav a[aria-current=page] { color: #fff; background: var(--grad); box-shadow: var(--shadow); }
+  nav .n { font-size: 12px; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--glass-hi); }
+  nav a[aria-current=page] .n { background: rgba(255,255,255,.25); }
 
-  main { padding: 28px 0 64px; }
-  .project-head h1 { font-size: 26px; margin: 0; letter-spacing: -0.01em; }
-  .project-head p { color: var(--muted); margin: 4px 0 20px; }
-  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 28px 0 10px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
-  a.card {
-    display: block; padding: 14px 16px; text-decoration: none; color: inherit;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    transition: border-color .15s, transform .15s;
+  main { padding: 40px 0 80px; }
+  .project-head { margin-bottom: 8px; }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .project-head h1 {
+    font-size: clamp(30px, 5vw, 46px); line-height: 1.1; margin: 6px 0 8px; letter-spacing: -0.03em; font-weight: 800;
+    background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent;
   }
-  a.card:hover { border-color: var(--accent); transform: translateY(-1px); }
-  .card .t { font-weight: 600; }
+  .project-head p { color: var(--muted); margin: 0 0 12px; max-width: 620px; }
+  h2 { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; margin: 36px 0 14px; }
+  h2 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); box-shadow: 0 0 12px var(--c); }
+  h2 .cnt { color: var(--muted); font-weight: 500; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr)); gap: 14px; }
+  a.card {
+    position: relative; display: flex; gap: 14px; align-items: flex-start; padding: 16px; text-decoration: none; color: inherit;
+    background: var(--glass); border: 1px solid var(--line); border-radius: 16px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition: transform .2s, border-color .2s, background .2s, box-shadow .2s;
+  }
+  a.card:hover {
+    transform: translateY(-3px); background: var(--glass-hi);
+    border-color: color-mix(in srgb, var(--c) 60%, transparent);
+    box-shadow: 0 14px 40px -16px var(--c);
+  }
+  .card .ic {
+    flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 19px;
+    background: color-mix(in srgb, var(--c) 22%, transparent); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+  }
+  .card .body { min-width: 0; padding-right: 12px; }
+  .card .t { font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
   .card .d { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .card .go { position: absolute; top: 14px; right: 14px; color: var(--muted); opacity: 0; transition: opacity .2s, transform .2s; }
+  a.card:hover .go { opacity: 1; transform: translate(2px, -2px); }
   .empty { color: var(--muted); padding: 24px 0; }
+  footer { color: var(--muted); font-size: 13px; padding-bottom: 32px; text-align: center; }
 </style>
 </head>
 <body>
+<div class="aurora"><span></span><span></span><span></span></div>
 <header>
   <div class="wrap">
     <div class="top">
-      <div class="brand">📚 Trieu's Docs</div>
-      <input type="search" id="q" placeholder="Tìm theo tên…" autocomplete="off">
+      <div class="brand"><span class="logo">📚</span><span class="name">Trieu's Docs</span></div>
+      <label class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="q" placeholder="Tìm tài liệu…" autocomplete="off" aria-label="Tìm tài liệu">
+      </label>
     </div>
     <nav id="tabs"></nav>
   </div>
 </header>
 <main class="wrap">
-  <div class="project-head"><h1 id="ptitle"></h1><p id="pdesc"></p></div>
+  <div class="project-head"><div class="eyebrow" id="peyebrow"></div><h1 id="ptitle"></h1><p id="pdesc"></p></div>
   <div id="list"></div>
 </main>
+<footer>Nội dung nằm trên claude.ai · chỉ mở được khi đã được share</footer>
 <script>
   const ALL = "Tất cả";
   const PROJECTS = {
-    "GCI Business": "App quản lý cho chủ salon: Business App, Owner App, thanh toán, báo cáo.",
-    "GCI Reward": "App cho khách hàng: tìm salon, đặt lịch, tích điểm và đổi thưởng.",
-    "FastboyPay": "Cổng thanh toán và các prototype checkout.",
-    "Quy trình & team": "Quy trình làm việc, QC và KPI của team.",
-    "Học tập & khác": "Tài liệu học tập và công cụ cá nhân."
+    "GCI Business": { icon: "💼", color: "#a78bfa", desc: "App quản lý cho chủ salon: Business App, Owner App, thanh toán, báo cáo." },
+    "GCI Reward": { icon: "🎁", color: "#f472b6", desc: "App cho khách hàng: tìm salon, đặt lịch, tích điểm và đổi thưởng." },
+    "FastboyPay": { icon: "💳", color: "#22d3ee", desc: "Cổng thanh toán và các prototype checkout." },
+    "Quy trình & team": { icon: "🧭", color: "#fbbf24", desc: "Quy trình làm việc, QC và KPI của team." },
+    "Học tập & khác": { icon: "📖", color: "#34d399", desc: "Tài liệu học tập và công cụ cá nhân." }
   };
+  const FALLBACK = { icon: "📄", color: "#94a3b8", desc: "" };
+  const meta = p => PROJECTS[p] || FALLBACK;
   let items = [];
   const $ = id => document.getElementById(id);
   const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -89,10 +155,15 @@
   const slug = s => norm(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const projects = () => [...new Set([...Object.keys(PROJECTS).filter(p => items.some(a => a.group === p)), ...items.map(a => a.group)])];
   const current = () => projects().find(p => slug(p) === location.hash.slice(1)) || ALL;
+  const fmt = d => d.split("-").reverse().join("/");
 
-  const cards = rows => `<div class="grid">` + rows.map(a =>
-    `<a class="card" href="${esc(a.url)}" target="_blank" rel="noopener">
-       <div class="t">${esc(a.title)}</div><div class="d">Cập nhật ${a.updated}</div></a>`).join("") + "</div>";
+  const cards = rows => `<div class="grid">` + rows.map(a => {
+    const m = meta(a.group);
+    return `<a class="card" style="--c:${m.color}" href="${esc(a.url)}" target="_blank" rel="noopener">
+       <span class="ic">${m.icon}</span>
+       <span class="body"><div class="t">${esc(a.title)}</div><div class="d">Cập nhật ${fmt(a.updated)}</div></span>
+       <svg class="go" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>`;
+  }).join("") + "</div>";
 
   function render() {
     const tab = current(), q = norm($("q").value.trim());
@@ -101,23 +172,25 @@
 
     $("tabs").innerHTML = [ALL, ...projects()].map(p => {
       const n = p === ALL ? items.length : items.filter(a => a.group === p).length;
-      return `<a href="#${p === ALL ? "" : slug(p)}" ${p === tab ? 'aria-current="page"' : ""}>${esc(p)}<span class="n">${n}</span></a>`;
+      const icon = p === ALL ? "✨" : meta(p).icon;
+      return `<a href="#${p === ALL ? "" : slug(p)}" ${p === tab ? 'aria-current="page"' : ""}>${icon} ${esc(p)}<span class="n">${n}</span></a>`;
     }).join("");
 
+    $("peyebrow").textContent = tab === ALL ? `${projects().length} dự án · ${items.length} tài liệu` : "Dự án";
     $("ptitle").textContent = tab === ALL ? "Tất cả dự án" : tab;
-    $("pdesc").textContent = tab === ALL ? "Danh mục artifact trên Claude. Nội dung nằm trên claude.ai, chỉ mở được khi đã được share." : (PROJECTS[tab] || "");
+    $("pdesc").textContent = tab === ALL ? "Danh mục tài liệu, prototype và demo được tạo cùng Claude." : meta(tab).desc;
 
     let html;
     if (tab === ALL) {
       html = projects().map(p => {
         const rows = items.filter(a => a.group === p && match(a)).sort(byDate);
-        return rows.length ? `<h2>${esc(p)} · ${rows.length}</h2>` + cards(rows) : "";
+        return rows.length ? `<h2 style="--c:${meta(p).color}"><span class="dot"></span>${esc(p)}<span class="cnt">${rows.length}</span></h2>` + cards(rows) : "";
       }).join("");
     } else {
       const rows = items.filter(a => a.group === tab && match(a)).sort(byDate);
       html = rows.length ? cards(rows) : "";
     }
-    $("list").innerHTML = html || `<p class="empty">Không tìm thấy artifact nào.</p>`;
+    $("list").innerHTML = html || `<p class="empty">Không tìm thấy tài liệu nào.</p>`;
     document.title = (tab === ALL ? "" : tab + " · ") + "Trieu's Docs";
   }
 
