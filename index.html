@@ -94,7 +94,7 @@
   h2 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); box-shadow: 0 0 12px var(--c); }
   h2 .cnt { color: var(--muted); font-weight: 500; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr)); gap: 14px; }
-  a.card {
+  .card {
     position: relative; display: flex; gap: 14px; align-items: flex-start; padding: 16px; text-decoration: none; color: inherit;
     background: var(--glass); border: 1px solid var(--line); border-radius: 16px;
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
@@ -116,6 +116,60 @@
   a.card:hover .go { opacity: 1; transform: translate(2px, -2px); }
   .empty { color: var(--muted); padding: 24px 0; }
   footer { color: var(--muted); font-size: 13px; padding-bottom: 32px; text-align: center; }
+
+  /* edit mode */
+  .btn {
+    font: inherit; font-size: 14px; font-weight: 600; padding: 9px 16px; border-radius: 999px; cursor: pointer;
+    color: var(--text); background: var(--glass); border: 1px solid var(--line); transition: all .2s; white-space: nowrap;
+  }
+  .btn:hover { background: var(--glass-hi); }
+  .btn.primary { color: #fff; background: var(--grad); border-color: transparent; box-shadow: var(--shadow); }
+  .btn.danger { color: #fb7185; }
+  .btn[aria-pressed=true] { color: #fff; background: var(--grad); border-color: transparent; }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  div.card { cursor: default; }
+  .card .acts { position: absolute; top: 10px; right: 10px; display: flex; gap: 4px; }
+  .card .acts button {
+    width: 32px; height: 32px; border-radius: 10px; cursor: pointer; font-size: 14px;
+    background: var(--glass-hi); border: 1px solid var(--line); color: var(--text);
+  }
+  .card .acts button:hover { border-color: var(--c); }
+  div.card .body { padding-right: 72px; }
+  .card.dirty { border-style: dashed; border-color: var(--c); }
+  .add-card {
+    display: grid; place-items: center; min-height: 76px; border-radius: 16px; cursor: pointer; font: inherit; font-weight: 600;
+    color: var(--muted); background: transparent; border: 1.5px dashed var(--line);
+  }
+  .add-card:hover { color: var(--text); border-color: #a78bfa; }
+  .savebar {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 20; width: min(560px, calc(100% - 32px));
+    display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 18px; border-radius: 999px;
+    background: color-mix(in srgb, var(--bg) 70%, transparent); border: 1px solid var(--line);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 20px 50px -20px rgba(0,0,0,.6);
+  }
+  .savebar .msg { margin-right: auto; font-size: 14px; color: var(--muted); }
+  .savebar[hidden] { display: none; }
+  dialog {
+    width: min(480px, calc(100% - 32px)); padding: 24px; border-radius: 20px; color: var(--text);
+    background: color-mix(in srgb, var(--bg) 88%, transparent); border: 1px solid var(--line);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 30px 80px -20px rgba(0,0,0,.7);
+  }
+  dialog::backdrop { background: rgba(5,5,15,.55); backdrop-filter: blur(4px); }
+  dialog h3 { margin: 0 0 16px; font-size: 20px; }
+  dialog label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 12px 0 6px; }
+  dialog input {
+    width: 100%; padding: 10px 12px; font: inherit; font-size: 14px; color: var(--text);
+    background: var(--glass); border: 1px solid var(--line); border-radius: 10px;
+  }
+  dialog input:focus { outline: none; border-color: #a78bfa; box-shadow: 0 0 0 4px rgba(167,139,250,.2); }
+  dialog .hint { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+  dialog .hint a { color: #a78bfa; }
+  dialog .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 22px; }
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 30; padding: 10px 18px; border-radius: 999px;
+    font-size: 14px; font-weight: 600; color: #fff; background: var(--grad); box-shadow: var(--shadow);
+  }
+  .toast.err { background: #e11d48; }
 </style>
 </head>
 <body>
@@ -128,6 +182,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input type="search" id="q" placeholder="Tìm tài liệu…" autocomplete="off" aria-label="Tìm tài liệu">
       </label>
+      <button class="btn" id="editToggle" aria-pressed="false">✏️ Sửa</button>
     </div>
     <nav id="tabs"></nav>
   </div>
@@ -137,6 +192,47 @@
   <div id="list"></div>
 </main>
 <footer>Nội dung nằm trên claude.ai · chỉ mở được khi đã được share</footer>
+
+<div class="savebar" id="savebar" hidden>
+  <span class="msg" id="saveMsg"></span>
+  <button class="btn" id="discardBtn">Hủy</button>
+  <button class="btn primary" id="saveBtn">Lưu lên web</button>
+</div>
+
+<dialog id="itemDlg">
+  <form method="dialog" id="itemForm">
+    <h3 id="itemDlgTitle">Sửa artifact</h3>
+    <label for="fTitle">Tên</label>
+    <input id="fTitle" required>
+    <label for="fUrl">Link claude.ai</label>
+    <input id="fUrl" type="url" required placeholder="https://claude.ai/artifact/...">
+    <label for="fGroup">Dự án</label>
+    <input id="fGroup" list="groupList" required placeholder="Chọn hoặc gõ tên dự án mới">
+    <datalist id="groupList"></datalist>
+    <label for="fDate">Ngày cập nhật</label>
+    <input id="fDate" type="date" required>
+    <div class="row">
+      <button class="btn danger" type="button" id="delBtn" style="margin-right:auto">🗑 Xóa</button>
+      <button class="btn" type="button" id="cancelBtn">Đóng</button>
+      <button class="btn primary" type="submit">Xong</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="tokenDlg">
+  <form method="dialog" id="tokenForm">
+    <h3>Kết nối GitHub</h3>
+    <p class="hint">Để lưu thay đổi, nhập GitHub token có quyền ghi repo <b>doc</b>. Token chỉ lưu trong trình duyệt này.</p>
+    <p class="hint">Tạo token tại <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Fine-grained tokens</a>: Repository access → <b>Only select repositories → doc</b>; Permissions → <b>Contents: Read and write</b>.</p>
+    <label for="fToken">Token</label>
+    <input id="fToken" type="password" required placeholder="github_pat_..." autocomplete="off">
+    <div class="row">
+      <button class="btn" type="button" id="tokenCancel">Hủy</button>
+      <button class="btn primary" type="submit">Lưu & đăng</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
   const ALL = "Tất cả";
   const PROJECTS = {
@@ -147,8 +243,10 @@
     "Học tập & khác": { icon: "📖", color: "#34d399", desc: "Tài liệu học tập và công cụ cá nhân." }
   };
   const FALLBACK = { icon: "📄", color: "#94a3b8", desc: "" };
+  const GH = { owner: "trieuquan27", repo: "doc", path: "artifacts.json", branch: "main" };
+  const TOKEN_KEY = "doc_gh_token";
   const meta = p => PROJECTS[p] || FALLBACK;
-  let items = [];
+  let items = [], saved = "[]", editing = false, editIdx = -1;
   const $ = id => document.getElementById(id);
   const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/gi, "d").toLowerCase();
@@ -156,14 +254,44 @@
   const projects = () => [...new Set([...Object.keys(PROJECTS).filter(p => items.some(a => a.group === p)), ...items.map(a => a.group)])];
   const current = () => projects().find(p => slug(p) === location.hash.slice(1)) || ALL;
   const fmt = d => d.split("-").reverse().join("/");
+  const today = () => new Date().toLocaleDateString("sv");
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} }
+  };
+  // one object per line, same layout as the file in the repo
+  const serialize = list => "[\n" + list.map(a => "  " + JSON.stringify({ title: a.title, url: a.url, updated: a.updated, group: a.group })).join(",\n") + "\n]\n";
+  const dirtyCount = () => {
+    const before = new Map(JSON.parse(saved).map(a => [a.url, JSON.stringify(a)]));
+    const after = new Map(items.map(a => [a.url, JSON.stringify(a)]));
+    let n = 0;
+    for (const [u, v] of after) if (before.get(u) !== v) n++;
+    for (const u of before.keys()) if (!after.has(u)) n++;
+    return n;
+  };
+  const savedSet = () => new Set(JSON.parse(saved).map(a => JSON.stringify(a)));
 
-  const cards = rows => `<div class="grid">` + rows.map(a => {
-    const m = meta(a.group);
-    return `<a class="card" style="--c:${m.color}" href="${esc(a.url)}" target="_blank" rel="noopener">
-       <span class="ic">${m.icon}</span>
-       <span class="body"><div class="t">${esc(a.title)}</div><div class="d">Cập nhật ${fmt(a.updated)}</div></span>
-       <svg class="go" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>`;
-  }).join("") + "</div>";
+  function toast(msg, err) {
+    const t = document.createElement("div");
+    t.className = "toast" + (err ? " err" : ""); t.textContent = msg;
+    document.body.append(t); setTimeout(() => t.remove(), err ? 6000 : 3500);
+  }
+
+  const cards = rows => {
+    const clean = editing ? savedSet() : null;
+    return `<div class="grid">` + rows.map(a => {
+      const m = meta(a.group), i = items.indexOf(a);
+      const inner = `<span class="ic">${m.icon}</span>
+         <span class="body"><div class="t">${esc(a.title)}</div><div class="d">Cập nhật ${fmt(a.updated)}</div></span>`;
+      if (editing) {
+        const dirty = !clean.has(JSON.stringify(a));
+        return `<div class="card${dirty ? " dirty" : ""}" style="--c:${m.color}">${inner}
+          <span class="acts"><button title="Mở" data-open="${i}">↗</button><button title="Sửa" data-edit="${i}">✏️</button></span></div>`;
+      }
+      return `<a class="card" style="--c:${m.color}" href="${esc(a.url)}" target="_blank" rel="noopener">${inner}
+         <svg class="go" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>`;
+    }).join("") + (editing ? `<button class="add-card" data-add>＋ Thêm artifact</button>` : "") + "</div>";
+  };
 
   function render() {
     const tab = current(), q = norm($("q").value.trim());
@@ -188,13 +316,93 @@
       }).join("");
     } else {
       const rows = items.filter(a => a.group === tab && match(a)).sort(byDate);
-      html = rows.length ? cards(rows) : "";
+      html = rows.length || editing ? cards(rows) : "";
     }
-    $("list").innerHTML = html || `<p class="empty">Không tìm thấy tài liệu nào.</p>`;
+    $("list").innerHTML = html || (editing ? cards([]) : `<p class="empty">Không tìm thấy tài liệu nào.</p>`);
     document.title = (tab === ALL ? "" : tab + " · ") + "Trieu's Docs";
+
+    $("editToggle").setAttribute("aria-pressed", editing);
+    $("editToggle").textContent = editing ? "✓ Xong sửa" : "✏️ Sửa";
+    const n = dirtyCount();
+    $("savebar").hidden = !editing && !n;
+    $("saveMsg").textContent = n ? `${n} thay đổi chưa lưu` : "Chưa có thay đổi";
+    $("saveBtn").disabled = $("discardBtn").disabled = !n;
   }
 
-  fetch("artifacts.json").then(r => r.json()).then(data => { items = data; render(); });
+  function openItem(i) {
+    editIdx = i;
+    const a = i >= 0 ? items[i] : { title: "", url: "", group: current() === ALL ? "" : current(), updated: today() };
+    $("itemDlgTitle").textContent = i >= 0 ? "Sửa artifact" : "Thêm artifact";
+    $("fTitle").value = a.title; $("fUrl").value = a.url; $("fGroup").value = a.group; $("fDate").value = a.updated;
+    $("groupList").innerHTML = projects().map(p => `<option value="${esc(p)}">`).join("");
+    $("delBtn").hidden = i < 0;
+    $("itemDlg").showModal();
+  }
+
+  $("itemForm").addEventListener("submit", e => {
+    const a = { title: $("fTitle").value.trim(), url: $("fUrl").value.trim(), updated: $("fDate").value, group: $("fGroup").value.trim() };
+    const dup = items.findIndex(x => x.url === a.url);
+    if (dup >= 0 && dup !== editIdx) { e.preventDefault(); toast("Link này đã có trong danh mục", true); return; }
+    if (editIdx >= 0) items[editIdx] = a; else items.push(a);
+    render();
+  });
+  $("cancelBtn").onclick = () => $("itemDlg").close();
+  $("delBtn").onclick = () => {
+    if (!confirm(`Xóa "${items[editIdx].title}" khỏi danh mục?`)) return;
+    items.splice(editIdx, 1); $("itemDlg").close(); render();
+  };
+
+  $("list").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.open) open(items[+b.dataset.open].url, "_blank", "noopener");
+    else if (b.dataset.edit) openItem(+b.dataset.edit);
+    else if ("add" in b.dataset) openItem(-1);
+  });
+  $("editToggle").onclick = () => { editing = !editing; render(); };
+  $("discardBtn").onclick = () => { if (confirm("Bỏ hết thay đổi chưa lưu?")) { items = JSON.parse(saved); render(); } };
+
+  // GitHub contents API wants base64 of the UTF-8 bytes
+  const b64 = s => { let bin = ""; for (const c of new TextEncoder().encode(s)) bin += String.fromCharCode(c); return btoa(bin); };
+
+  async function publish(token) {
+    const api = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}`;
+    const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" };
+    const cur = await fetch(`${api}?ref=${GH.branch}`, { headers, cache: "no-store" });
+    if (cur.status === 401 || cur.status === 403 || cur.status === 404) throw Object.assign(new Error("Token không hợp lệ hoặc thiếu quyền ghi repo doc"), { auth: true });
+    if (!cur.ok) throw new Error(`GitHub lỗi ${cur.status}`);
+    const { sha } = await cur.json();
+    const res = await fetch(api, {
+      method: "PUT", headers,
+      body: JSON.stringify({ message: `Update artifacts catalog (${dirtyCount()} changes) from web`, content: b64(serialize(items)), sha, branch: GH.branch })
+    });
+    if (res.status === 401 || res.status === 403) throw Object.assign(new Error("Token thiếu quyền Contents: Read and write"), { auth: true });
+    if (res.status === 409) throw new Error("Danh mục vừa bị sửa ở nơi khác. Tải lại trang rồi sửa lại.");
+    if (!res.ok) throw new Error(`GitHub lỗi ${res.status}`);
+  }
+
+  async function save() {
+    const token = store.get(TOKEN_KEY);
+    if (!token) { $("fToken").value = ""; $("tokenDlg").showModal(); return; }
+    $("saveBtn").disabled = true; $("saveBtn").textContent = "Đang lưu…";
+    try {
+      await publish(token);
+      saved = serialize(items); editing = false;
+      toast("Đã lưu. Web sẽ cập nhật cho mọi người sau khoảng 1 phút.");
+    } catch (err) {
+      if (err.auth) store.set(TOKEN_KEY, null);
+      toast(err.message, true);
+    } finally {
+      $("saveBtn").textContent = "Lưu lên web"; render();
+    }
+  }
+  $("saveBtn").onclick = save;
+  $("tokenForm").addEventListener("submit", () => { store.set(TOKEN_KEY, $("fToken").value.trim()); save(); });
+  $("tokenCancel").onclick = () => $("tokenDlg").close();
+
+  addEventListener("beforeunload", e => { if (dirtyCount()) e.preventDefault(); });
+
+  // cache-bust so edits show up right after a save
+  fetch(`artifacts.json?t=${Date.now()}`).then(r => r.json()).then(data => { items = data; saved = serialize(items); render(); });
   $("q").addEventListener("input", render);
   addEventListener("hashchange", () => { render(); scrollTo(0, 0); });
 </script>
