@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS artifacts (
+  url TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  updated TEXT NOT NULL,
+  grp TEXT NOT NULL
+);

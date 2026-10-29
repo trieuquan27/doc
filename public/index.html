@@ -221,14 +221,13 @@
 
 <dialog id="tokenDlg">
   <form method="dialog" id="tokenForm">
-    <h3>Kết nối GitHub</h3>
-    <p class="hint">Để lưu thay đổi, nhập GitHub token có quyền ghi repo <b>doc</b>. Token chỉ lưu trong trình duyệt này.</p>
-    <p class="hint">Tạo token tại <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Fine-grained tokens</a>: Repository access → <b>Only select repositories → doc</b>; Permissions → <b>Contents: Read and write</b>.</p>
-    <label for="fToken">Token</label>
-    <input id="fToken" type="password" required placeholder="github_pat_..." autocomplete="off">
+    <h3>Nhập mật khẩu sửa</h3>
+    <p class="hint">Chỉ cần nhập 1 lần, trình duyệt này sẽ nhớ.</p>
+    <label for="fToken">Mật khẩu</label>
+    <input id="fToken" type="password" required autocomplete="current-password">
     <div class="row">
       <button class="btn" type="button" id="tokenCancel">Hủy</button>
-      <button class="btn primary" type="submit">Lưu & đăng</button>
+      <button class="btn primary" type="submit">Lưu</button>
     </div>
   </form>
 </dialog>
@@ -243,8 +242,7 @@
     "Học tập & khác": { icon: "📖", color: "#34d399", desc: "Tài liệu học tập và công cụ cá nhân." }
   };
   const FALLBACK = { icon: "📄", color: "#94a3b8", desc: "" };
-  const GH = { owner: "trieuquan27", repo: "doc", path: "artifacts.json", branch: "main" };
-  const TOKEN_KEY = "doc_gh_token";
+  const TOKEN_KEY = "doc_edit_pw";
   const meta = p => PROJECTS[p] || FALLBACK;
   let items = [], saved = "[]", editing = false, editIdx = -1;
   const $ = id => document.getElementById(id);
@@ -259,7 +257,6 @@
     get(k) { try { return localStorage.getItem(k); } catch { return null; } },
     set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} }
   };
-  // one object per line, same layout as the file in the repo
   const serialize = list => "[\n" + list.map(a => "  " + JSON.stringify({ title: a.title, url: a.url, updated: a.updated, group: a.group })).join(",\n") + "\n]\n";
   const dirtyCount = () => {
     const before = new Map(JSON.parse(saved).map(a => [a.url, JSON.stringify(a)]));
@@ -361,23 +358,15 @@
   $("editToggle").onclick = () => { editing = !editing; render(); };
   $("discardBtn").onclick = () => { if (confirm("Bỏ hết thay đổi chưa lưu?")) { items = JSON.parse(saved); render(); } };
 
-  // GitHub contents API wants base64 of the UTF-8 bytes
-  const b64 = s => { let bin = ""; for (const c of new TextEncoder().encode(s)) bin += String.fromCharCode(c); return btoa(bin); };
-
-  async function publish(token) {
-    const api = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}`;
-    const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" };
-    const cur = await fetch(`${api}?ref=${GH.branch}`, { headers, cache: "no-store" });
-    if (cur.status === 401 || cur.status === 403 || cur.status === 404) throw Object.assign(new Error("Token không hợp lệ hoặc thiếu quyền ghi repo doc"), { auth: true });
-    if (!cur.ok) throw new Error(`GitHub lỗi ${cur.status}`);
-    const { sha } = await cur.json();
-    const res = await fetch(api, {
-      method: "PUT", headers,
-      body: JSON.stringify({ message: `Update artifacts catalog (${dirtyCount()} changes) from web`, content: b64(serialize(items)), sha, branch: GH.branch })
+  async function publish(password) {
+    const res = await fetch("/api/artifacts", {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${password}`, "Content-Type": "application/json" },
+      body: serialize(items)
     });
-    if (res.status === 401 || res.status === 403) throw Object.assign(new Error("Token thiếu quyền Contents: Read and write"), { auth: true });
-    if (res.status === 409) throw new Error("Danh mục vừa bị sửa ở nơi khác. Tải lại trang rồi sửa lại.");
-    if (!res.ok) throw new Error(`GitHub lỗi ${res.status}`);
+    const body = await res.json().catch(() => ({}));
+    if (res.status === 401) throw Object.assign(new Error("Sai mật khẩu"), { auth: true });
+    if (!res.ok) throw new Error(body.error || `Lỗi máy chủ ${res.status}`);
   }
 
   async function save() {
@@ -387,7 +376,7 @@
     try {
       await publish(token);
       saved = serialize(items); editing = false;
-      toast("Đã lưu. Web sẽ cập nhật cho mọi người sau khoảng 1 phút.");
+      toast("Đã lưu ✓");
     } catch (err) {
       if (err.auth) store.set(TOKEN_KEY, null);
       toast(err.message, true);
@@ -401,8 +390,7 @@
 
   addEventListener("beforeunload", e => { if (dirtyCount()) e.preventDefault(); });
 
-  // cache-bust so edits show up right after a save
-  fetch(`artifacts.json?t=${Date.now()}`).then(r => r.json()).then(data => { items = data; saved = serialize(items); render(); });
+  fetch("/api/artifacts", { cache: "no-store" }).then(r => r.json()).then(data => { items = data; saved = serialize(items); render(); });
   $("q").addEventListener("input", render);
   addEventListener("hashchange", () => { render(); scrollTo(0, 0); });
 </script>
