@@ -5,4 +5,4 @@ pages_build_output_dir = "public"
 [[d1_databases]]
 binding = "DB"
 database_name = "trieu-docs"
-database_id = "REPLACE_AFTER_CREATE"
+database_id = "aecf8e13-d848-421c-8ba2-d65c6658e84b"
